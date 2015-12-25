@@ -13,7 +13,7 @@
 #include "exceptions.h"
 #include <map>
 
-namespace floorplan {
+namespace mgg {
 
 template<class Data>
 class CheckClass {
