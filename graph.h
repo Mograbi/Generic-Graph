@@ -8,10 +8,6 @@
 #ifndef GRAPH_H_
 #define GRAPH_H_
 #include <list>
-#include "system.h"
-#include "block.h"
-#include "exceptions.h"
-#include <map>
 
 namespace mgg {
 
