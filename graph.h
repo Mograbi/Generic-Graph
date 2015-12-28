@@ -7,8 +7,9 @@
 
 #ifndef GRAPH_H_
 #define GRAPH_H_
-#include <list>
+
 #include "exceptions.h"
+#include <list>
 
 namespace mgg {
 
@@ -31,97 +32,83 @@ public:
 	}
 };
 
-/*==================================================================================*/
-/*==========================       Vertex       ====================================*/
-/*==================================================================================*/
-template<class Data>
-struct Vertex {
-	Data data;
-	bool operator==(const Vertex& v) {
-		return data == v.data;
-	}
-	Vertex(const Data& d) :
-			data(d) {
-	}
-	Vertex(const Vertex& v) :
-			data(v.data) {
-	}
-};
-template<class Data>
-std::ostream& operator<<(std::ostream& os, const Vertex<Data>& v) {
-	os << v.data;
-	return os;
-}
-/*==================================================================================*/
-/*==========================       Edge       ======================================*/
-/*==================================================================================*/
-template<class Data>
-struct Edge {
-	Vertex<Data> vertex1;
-	Vertex<Data> vertex2;
-
-	Edge(Vertex<Data> v1, Vertex<Data> v2) :
-			vertex1(v1), vertex2(v2) {
-	}
-	bool operator==(const Edge& e) {
-		return ((vertex1 == e.vertex1 && vertex2 == e.vertex2)
-				|| (vertex1 == e.vertex2 && vertex2 == e.vertex1));
-	}
-	/*
-	 * return the other end of the edge
-	 * v <--> u
-	 * if receive u return v and vice versa.
-	 */
-	Vertex<Data> getOtherEnd(const Vertex<Data>& v) {
-		if (!(vertex1 == v) && !(vertex2 == v)) {
-			throw EdgeDoesNotContainVertex();
-		}
-		return vertex1 == v ? vertex2 : vertex1;
-	}
-};
-template<class Data>
-std::ostream& operator<<(std::ostream& os, const Edge<Data>& e) {
-	os << e.vertex1.data << "  <--->  " << e.vertex2.data;
-	return os;
-}
-/*==================================================================================*/
-/*==========================       GraphElement       ==============================*/
-/*==================================================================================*/
-/*
- * GraphElement contains Vertex v and all the edges that is connected to it
- */
-template<class Data>
-struct GraphElement {
-	Vertex<Data> v;
-	list<Edge<Data>> edges;
-	GraphElement(Vertex<Data> v, list<Edge<Data>> l) :
-			v(v), edges(l) {
-	}
-	bool operator==(const Vertex<Data>& vertex) {
-		return v == vertex;
-	}
-	/*
-	 * check if vertex contains edge
-	 */
-	bool containsEdge(const Edge<Data>& e) {
-		CheckClass<Edge<Data>> check;
-		return check.listcontains(&edges,e);
-	}
-	void addEdge(const Vertex<Data>& v1, const Vertex<Data>& v2) {
-		Edge<Data> e(v1, v2);
-		if (!containsEdge(e)) {
-			edges.push_back(e);
-		}
-	}
-};
-/*==================================================================================*/
-/*==========================       Graph       =====================================*/
-/*==================================================================================*/
 template<class Data>
 class Graph {
+	// Decelerations
+	struct GraphElement;
+	struct Vertex;
+	struct Edge;
 
-	list<GraphElement<Data>> graph;
+private:
+	list<GraphElement> graph;
 
+	/*===============================================*/
+	/*=====  GraphElement  ==========================*/
+	/*===============================================*/
+	struct GraphElement {
+		Vertex v;
+		list<Edge> edges;
+		GraphElement(Vertex v, list<Edge> l) :
+				v(v), edges(l) {
+		}
+		bool operator==(const Vertex& vertex) {
+			return v == vertex;
+		}
+		/*
+		 * check if vertex contains edge
+		 */
+		bool containsEdge(const Edge& e) {
+			CheckClass<Edge> check;
+			return check.listcontains(&edges, e);
+		}
+		void addEdge(const Vertex& v1, const Vertex& v2) {
+			Edge e(v1, v2);
+			if (!containsEdge(e)) {
+				edges.push_back(e);
+			}
+		}
+	};
+	/*===============================================*/
+	/*=====  Vertex  ================================*/
+	/*===============================================*/
+	struct Vertex {
+		Data data;
+		bool operator==(const Vertex& v) {
+			return data == v.data;
+		}
+		Vertex(const Data& d) :
+				data(d) {
+		}
+		Vertex(const Vertex& v) :
+				data(v.data) {
+		}
+	};
+	/*===============================================*/
+	/*=====  Edge  ==================================*/
+	/*===============================================*/
+	struct Edge {
+		Vertex vertex1;
+		Vertex vertex2;
+
+		Edge(Vertex v1, Vertex v2) :
+				vertex1(v1), vertex2(v2) {
+		}
+		bool operator==(const Edge& e) {
+			return ((vertex1 == e.vertex1 && vertex2 == e.vertex2)
+					|| (vertex1 == e.vertex2 && vertex2 == e.vertex1));
+		}
+		/*
+		 * return the other end of the edge
+		 * v <--> u
+		 * if receive u return v and vice versa.
+		 */
+		Vertex getOtherEnd(const Vertex& v) {
+			if (!(vertex1 == v) && !(vertex2 == v)) {
+				throw floorplan::EdgeDoesNotContainVertex();
+			}
+			return vertex1 == v ? vertex2 : vertex1;
+		}
+	};
 	/**************************************************************/
 	/*****************    Private Methods    **********************/
 	/**************************************************************/
@@ -130,8 +117,8 @@ class Graph {
 	 * private auxiliary function that receives vertex and edge
 	 * add the given edge to the vertex in graph.
 	 */
-	void atPutEdge(const Vertex<Data>& v, const Edge<Data>& e) {
-		typename list<GraphElement<Data>>::iterator iter = graph.begin();
+	void atPutEdge(const Vertex& v, const Edge& e) {
+		GraphIterator iter = graph.begin();
 		for (; iter != graph.end(); ++iter) {
 			if ((*iter) == v) {
 				break;
@@ -145,24 +132,25 @@ class Graph {
 	 * run on all the vertices that is connected to the given vertex and run the
 	 * recursion on them.
 	 */
-	void returnConnectedAux(list<Vertex<Data>>* vertices,
-			const Vertex<Data>& v) {
-		CheckClass<Vertex<Data>> check;
-		if (check.listcontains(vertices,v)) {
+	void returnConnectedAux(list<Data>* vertices, const Vertex& v) {
+		CheckClass<Data> check;
+		if (check.listcontains(vertices, v.data)) {
 			return;
 		}
-		list<Edge<int>>* edges;
-		this->getEdgesOfVertex(&edges, v);
-		typename list<Edge<int>>::iterator edgeIter = edges->begin();
+		list<Edge>* edges;
+		getEdgesOfVertex(&edges, v.data);
+		typename list<Edge>::iterator edgeIter = edges->begin();
 		for (; edgeIter != edges->end(); ++edgeIter) {
-			if (!check.listcontains(vertices,v)) {
-				(vertices)->push_back(v);
+			if (!check.listcontains(vertices, v.data)) {
+				(vertices)->push_back(v.data);
 			}
 			//recursion
 			returnConnectedAux(vertices, edgeIter->getOtherEnd(v));
 		}
 		delete edges;
 	}
+
+	typedef typename list<GraphElement>::iterator GraphIterator;
 	/**************************************************************/
 	/*****************    Public Methods    ***********************/
 	/**************************************************************/
@@ -171,11 +159,12 @@ public:
 	 * add a new vertex to the graph
 	 * throw VertexAlreadyExist in case the vertex is already in the graph
 	 */
-	void addVertex(const Vertex<Data>& v) {
-		if (vertexExist(v)) {
+	void addVertex(const Data& data) {
+		Vertex v(data);
+		if (vertexExist(data)) {
 			throw VertexAlreadyExist();
 		}
-		typename list<GraphElement<Data>>::iterator iter = graph.begin();
+		GraphIterator iter = graph.begin();
 		for (; iter != graph.end(); ++iter) {
 			if ((*iter) == v) {
 				// graph already contain vertex
@@ -183,7 +172,7 @@ public:
 			}
 		}
 		// graph does not contain Vertex
-		GraphElement<Data> element(v, list<Edge<Data>>());
+		GraphElement element(v, list<Edge>());
 		graph.push_back(element);
 	}
 
@@ -193,12 +182,14 @@ public:
 	 * the edges that we have in this graph is "undirected graph" so we add the edge to
 	 * both vertices v1 and v2
 	 */
-	void addEdge(const Vertex<Data>& v1, const Vertex<Data>& v2) {
-		if ((!vertexExist(v1)) || (!vertexExist(v2))) {
+	void addEdge(const Data& d1, const Data& d2) {
+		Vertex v1(d1);
+		Vertex v2(d2);
+		if ((!vertexExist(d1)) || (!vertexExist(d2))) {
 			throw VertexDoesNotExist();
 		}
 		// graph add edge already check if edge exist
-		Edge<Data> e(v1, v2);
+		Edge e(v1, v2);
 		this->atPutEdge(v1, e);
 		this->atPutEdge(v2, e);
 	}
@@ -208,44 +199,51 @@ public:
 	 * vertices must allocate vertices in this function
 	 * the caller function must free.
 	 */
-	void getVertices(list<Vertex<Data>>** vertices) {
-		*vertices = new list<Vertex<Data>>;
-		typename list<GraphElement<Data>>::iterator iter = graph.begin();
+	void getVertices(list<Data>** vertices) {
+		*vertices = new list<Data>;
+		GraphIterator iter = graph.begin();
 		for (; iter != graph.end(); ++iter) {
-			(*vertices)->push_back(((GraphElement<Data> ) (*iter)).v);
+			(*vertices)->push_back(((GraphElement) (*iter)).v.data);
 		}
 	}
 
 	/*
 	 * edges must be allocated before using this function
 	 * return in list (edges) all the edges that is connected to given vertex
+	 *
+	 * we assume that tempEdge has a constructor which take two parameters of Data
+	 * tempEdge edge((*edgeIter).vertex1.data, (*edgeIter).vertex2.data);
 	 */
-	void getEdgesOfVertex(list<Edge<Data>>** edges, const Vertex<Data>& v) {
-		if (!vertexExist(v)) {
+	template<class tempEdge>
+	void getEdgesOfVertex(list<tempEdge>** edges, const Data& d) {
+		Vertex v(d);
+		if (!vertexExist(d)) {
 			throw VertexDoesNotExist();
 		}
-		*edges = new list<Edge<Data>>;
-		typename list<GraphElement<Data>>::iterator iter = graph.begin();
+		*edges = new list<tempEdge>;
+		GraphIterator iter = graph.begin();
 		for (; iter != graph.end(); ++iter) {
 			if (*iter == v) {
 				break;
 			}
 		}
-		const list<Edge<Data>>& liste = ((GraphElement<Data> ) (*iter)).edges;
-		typename list<Edge<Data>>::const_iterator edgeIter = liste.begin();
+		const list<Edge>& liste = ((GraphElement) (*iter)).edges;
+		typename list<Edge>::const_iterator edgeIter = liste.begin();
 		for (; edgeIter != liste.end(); ++edgeIter) {
-			(*edges)->push_back((*edgeIter));
+			tempEdge edge((*edgeIter).vertex1.data, (*edgeIter).vertex2.data);
+			(*edges)->push_back(edge);
 		}
 	}
 
 	/*
 	 * check if vertex exist in graph
 	 */
-	bool vertexExist(const Vertex<Data>& v) {
-		typename list<GraphElement<Data>>::iterator iter = graph.begin();
+	bool vertexExist(const Data& d) {
+		Vertex v(d);
+		GraphIterator iter = graph.begin();
 		for (; iter != graph.end(); ++iter) {
 			if ((*iter) == v) {
-				if (((GraphElement<Data> ) (*iter)) == v) {
+				if (((GraphElement) (*iter)) == v) {
 					// vertex already contains this edge
 					return true;
 				}
@@ -257,7 +255,8 @@ public:
 	/*
 	 * edges must be allocated before using this function
 	 */
-	void getAllEdges(list<Edge<Data>>** edges) {
+	template<class tempEdge>
+	void getAllEdges(list<tempEdge>** edges) {
 		// currently empty
 	}
 
@@ -268,14 +267,16 @@ public:
 	 * edges in graph: 1 <--> 2  and 2 <--> 3
 	 * if we send v=1 this function will return 1, 2, 3 (the same result for v=2 and v=3)
 	 */
-	void returnReached(const Vertex<Data>& v, list<Vertex<Data>>** vertices) {
-		if (!vertexExist(v)) {
+	void returnReached(const Data& d, list<Data>** vertices) {
+		Vertex v(d);
+		if (!vertexExist(d)) {
 			throw VertexDoesNotExist();
 		}
-		*vertices = new list<Vertex<Data>>;
+		*vertices = new list<Data>;
 		this->returnConnectedAux(*vertices, v);
 	}
 };
+
 
 }
 
